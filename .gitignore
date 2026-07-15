@@ -5,3 +5,4 @@ journal.db
 *.wav
 recordings/
 pretrained_models/
+.vercel/

@@ -1142,6 +1142,208 @@
     document.getElementById('detail-summary').textContent = entry.summary;
     showScreen('entry');
   }
+
+  // Vercel-ready browser runtime. Journal data never leaves this browser.
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const STORAGE_KEY = 'voiceAudioJournal.entries.v1';
+  const VOICE_KEY = 'voiceAudioJournal.voice.v1';
+  let journalRecognition = null;
+  let journalTranscript = '';
+
+  function createRecognition({ continuous = false, interimResults = false } = {}) {
+    if (!SpeechRecognitionAPI) {
+      throw new Error('Live transcription requires Chrome or Edge.');
+    }
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = navigator.language || 'en-US';
+    recognition.continuous = continuous;
+    recognition.interimResults = interimResults;
+    return recognition;
+  }
+
+  function readEntries() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch (_) { return []; }
+  }
+
+  function writeEntries(entries) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function normalizeSpeech(text) {
+    return text.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function localSummary(text) {
+    const clean = text.replace(/\s+/g, ' ').trim();
+    if (clean.length < 50) return 'Not enough content to summarize.';
+    const sentences = clean.match(/[^.!?]+[.!?]*/g) || [clean];
+    const positive = /\b(happy|good|great|excited|grateful|love|calm|proud|hopeful)\b/gi;
+    const negative = /\b(sad|bad|angry|anxious|worried|tired|stressed|upset|lonely)\b/gi;
+    const pos = (clean.match(positive) || []).length;
+    const neg = (clean.match(negative) || []).length;
+    const mood = pos > neg ? 'positive and hopeful' : neg > pos ? 'reflective or emotionally heavy' : 'thoughtful and balanced';
+    const highlights = sentences.slice(0, 3).map(s => s.trim()).filter(Boolean).join(' ');
+    return `The entry feels ${mood}. ${highlights}`.slice(0, 700);
+  }
+
+  async function handleLoginMic() {
+    if (isLoginRecording) return;
+    isLoginRecording = true;
+    const btn = document.getElementById('login-mic-btn');
+    const status = document.getElementById('login-status');
+    const msg = document.getElementById('login-msg');
+    btn.classList.add('recording');
+    status.textContent = 'Recording... say “open”';
+
+    try {
+      const recognition = createRecognition();
+      recognition.onresult = event => {
+        const heard = event.results[0][0].transcript;
+        const normalized = normalizeSpeech(heard);
+        const containsPassphrase = normalized.split(' ').includes('open');
+        if (!containsPassphrase) {
+          msg.className = 'status-msg error';
+          msg.textContent = `Passphrase not recognized. You said: ${heard}`;
+          status.textContent = 'Try again';
+          return;
+        }
+
+        if (loginMode === 'register') {
+          localStorage.setItem(VOICE_KEY, JSON.stringify({ passphrase: 'open', registeredAt: new Date().toISOString() }));
+          msg.className = 'status-msg success';
+          msg.textContent = 'Voice passphrase registered successfully!';
+          status.textContent = 'Registered! Now login.';
+          setTimeout(() => setLoginMode('login'), 1200);
+        } else if (!localStorage.getItem(VOICE_KEY)) {
+          msg.className = 'status-msg error';
+          msg.textContent = 'No voice passphrase is registered on this browser yet.';
+          setLoginMode('register');
+        } else {
+          msg.className = 'status-msg success';
+          msg.textContent = 'Access granted!';
+          isAuthenticated = true;
+          setTimeout(() => showScreen('memories'), 500);
+        }
+      };
+      recognition.onerror = event => {
+        msg.className = 'status-msg error';
+        msg.textContent = event.error === 'not-allowed' ? 'Microphone access was denied.' : `Could not recognize speech (${event.error}).`;
+      };
+      recognition.onend = () => {
+        btn.classList.remove('recording');
+        isLoginRecording = false;
+      };
+      recognition.start();
+    } catch (error) {
+      msg.className = 'status-msg error';
+      msg.textContent = error.message;
+      btn.classList.remove('recording');
+      isLoginRecording = false;
+    }
+  }
+
+  async function startRecording() {
+    seconds = 0;
+    isPaused = false;
+    journalTranscript = '';
+    document.getElementById('live-transcript-text').textContent = 'Start speaking... your words will appear here.';
+    document.getElementById('timer-display').textContent = '00:00';
+
+    try {
+      journalRecognition = createRecognition({ continuous: true, interimResults: true });
+      journalRecognition.onresult = event => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (event.results[i].isFinal) journalTranscript += `${text.trim()} `;
+          else interim += text;
+        }
+        document.getElementById('live-transcript-text').textContent = (journalTranscript + interim).trim() || 'Listening...';
+      };
+      journalRecognition.onerror = event => {
+        if (!['aborted', 'no-speech'].includes(event.error)) alert(`Transcription error: ${event.error}`);
+      };
+      journalRecognition.onend = () => {
+        if (!isPaused && timerInterval) {
+          try { journalRecognition.start(); } catch (_) {}
+        }
+      };
+      journalRecognition.start();
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          seconds++;
+          const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+          const s = String(seconds % 60).padStart(2, '0');
+          document.getElementById('timer-display').textContent = `${m}:${s}`;
+        }
+      }, 1000);
+      animateWaveform();
+    } catch (error) {
+      alert(error.message);
+      showScreen('memories');
+    }
+  }
+
+  function togglePause() {
+    isPaused = !isPaused;
+    document.getElementById('pause-icon').textContent = isPaused ? '▶' : '⏸';
+    document.getElementById('pause-label').textContent = isPaused ? 'Resume' : 'Pause';
+    if (isPaused) journalRecognition?.stop();
+    else try { journalRecognition?.start(); } catch (_) {}
+  }
+
+  function stopJournalRuntime() {
+    clearInterval(timerInterval);
+    clearInterval(waveInterval);
+    timerInterval = null;
+    try { journalRecognition?.abort(); } catch (_) {}
+    journalRecognition = null;
+  }
+
+  async function finishRecording() {
+    stopJournalRuntime();
+    const transcript = journalTranscript.trim();
+    if (!transcript) {
+      alert('No content recorded.');
+      showScreen('memories');
+      return;
+    }
+    const entry = {
+      timestamp: new Date().toLocaleString(),
+      transcript,
+      summary: localSummary(transcript)
+    };
+    writeEntries([entry, ...readEntries()]);
+    journalTranscript = '';
+    showEntryDetail(entry);
+  }
+
+  async function discardRecording() {
+    stopJournalRuntime();
+    journalTranscript = '';
+    showScreen('memories');
+  }
+
+  async function loadEntries() {
+    const entries = readEntries();
+    const grid = document.getElementById('entries-grid');
+    document.getElementById('entry-count').textContent = entries.length;
+    if (!entries.length) {
+      grid.innerHTML = `<div class="no-entries"><p>No journal entries yet.</p><button class="btn-primary" onclick="showScreen('recording'); startRecording()">Record your first entry</button></div>`;
+      return;
+    }
+    grid.innerHTML = entries.map((entry, index) => {
+      const encoded = encodeURIComponent(JSON.stringify(entry));
+      return `<div class="entry-card" onclick="showEntryDetail(JSON.parse(decodeURIComponent('${encoded}')))">
+        <div class="entry-date">${entry.timestamp}</div>
+        <div class="entry-title">Journal Entry ${entries.length - index}</div>
+        <div class="entry-preview"></div>
+        <div class="entry-time">🕐 ${entry.timestamp}</div>
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('.entry-preview').forEach((node, index) => { node.textContent = entries[index].transcript; });
+  }
 </script>
 </body>
 </html>

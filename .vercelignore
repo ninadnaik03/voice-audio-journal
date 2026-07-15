@@ -1,0 +1,7 @@
+backend/
+frontend/
+history.json
+__pycache__/
+*.pyc
+.env
+*.wav
