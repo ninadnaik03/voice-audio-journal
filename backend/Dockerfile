@@ -12,6 +12,7 @@ COPY requirements-auth.txt .
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
     torch==2.11.0 torchaudio==2.11.0
 RUN pip install --no-cache-dir -r requirements-auth.txt
+RUN python -c "from speechbrain.inference.speaker import SpeakerRecognition; from speechbrain.utils.fetching import LocalStrategy; SpeakerRecognition.from_hparams(source='speechbrain/spkrec-ecapa-voxceleb', savedir='/app/model_cache/ecapa', run_opts={'device':'cpu'}, local_strategy=LocalStrategy.COPY)"
 COPY auth_server.py .
 
 EXPOSE 7860

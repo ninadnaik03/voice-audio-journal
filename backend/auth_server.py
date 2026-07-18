@@ -307,8 +307,9 @@ def model():
         from speechbrain.inference.speaker import SpeakerRecognition
         from speechbrain.utils.fetching import LocalStrategy
 
+        local_model = MODEL_DIR / "hyperparams.yaml"
         _model = SpeakerRecognition.from_hparams(
-            source="speechbrain/spkrec-ecapa-voxceleb",
+            source=str(MODEL_DIR) if local_model.exists() else "speechbrain/spkrec-ecapa-voxceleb",
             savedir=str(MODEL_DIR),
             run_opts={"device": "cpu"},
             local_strategy=LocalStrategy.COPY,
