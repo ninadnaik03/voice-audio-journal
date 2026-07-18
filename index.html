@@ -2581,6 +2581,7 @@
     const msg = document.getElementById('login-msg');
     const prompt = document.getElementById('voice-prompt');
     const progress = document.getElementById('sample-progress');
+    let processingMessageTimer = null;
     msg.className = 'status-msg';
     try {
       const username = usernameValue();
@@ -2612,7 +2613,19 @@
       btn.classList.add('recording');
       status.textContent = 'Recording for 6 seconds…';
       const { blob, transcript } = await captureVoiceSample();
-      status.textContent = 'Processing voice…';
+      const processingMessages = [
+        'Speaking your thoughts aloud can make them easier to understand.',
+        'Small reflections often reveal the clearest patterns.',
+        'Your voice carries more than words—it holds the shape of a moment.',
+        'Your journal is preparing a private space for this memory.',
+        'Almost there—your voice is being securely verified.'
+      ];
+      let processingMessageIndex = 0;
+      status.textContent = processingMessages[processingMessageIndex];
+      processingMessageTimer = setInterval(() => {
+        processingMessageIndex = (processingMessageIndex + 1) % processingMessages.length;
+        status.textContent = processingMessages[processingMessageIndex];
+      }, 2800);
       const form = new FormData();
       form.append('audio', blob, 'voice.webm');
 
@@ -2651,6 +2664,7 @@
       status.textContent = 'Please try again';
       if (loginMode === 'login') authState.challengeId = null;
     } finally {
+      if (processingMessageTimer) clearInterval(processingMessageTimer);
       btn.classList.remove('recording');
       isLoginRecording = false;
     }
