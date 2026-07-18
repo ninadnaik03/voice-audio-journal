@@ -2469,19 +2469,36 @@
     if (!AUTH_API_BASE || Date.now() < authServiceReadyUntil) return;
     if (authServiceWakePromise) return authServiceWakePromise;
     authServiceWakePromise = (async () => {
-      showAuthServiceStatus('Starting the secure voice service. This can take about a minute on the free server…');
-      for (let attempt = 0; attempt < 12; attempt += 1) {
-        try {
-          const response = await fetch(`${AUTH_API_BASE}/api/health`, { credentials: 'include' });
-          const data = await response.json().catch(() => ({}));
-          if (response.ok && data.ok) {
-            authServiceReadyUntil = Date.now() + 10 * 60 * 1000;
-            return;
+      const startedAt = Date.now();
+      const estimatedSeconds = 60;
+      const updateCountdown = () => {
+        const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+        const remaining = Math.max(estimatedSeconds - elapsed, 0);
+        showAuthServiceStatus(
+          remaining > 0
+            ? `Starting secure voice service — about ${remaining} second${remaining === 1 ? '' : 's'} remaining.`
+            : 'The secure voice service is almost ready…'
+        );
+      };
+      updateCountdown();
+      const countdown = setInterval(updateCountdown, 1000);
+      try {
+        for (let attempt = 0; attempt < 18; attempt += 1) {
+          try {
+            const response = await fetch(`${AUTH_API_BASE}/api/health`, { credentials: 'include' });
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data.ok) {
+              authServiceReadyUntil = Date.now() + 10 * 60 * 1000;
+              showAuthServiceStatus('Secure voice service is ready.');
+              return;
+            }
+          } catch (_) {}
+          await new Promise(resolve => setTimeout(resolve, 5000));
           }
-        } catch (_) {}
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        throw new Error('The secure voice service is taking too long to start. Please wait a moment and try again.');
+      } finally {
+        clearInterval(countdown);
       }
-      throw new Error('The secure voice service is taking too long to start. Please wait a moment and try again.');
     })();
     try {
       await authServiceWakePromise;
