@@ -23,6 +23,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 import torch
+import certifi
 from fastapi import Cookie, FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -209,11 +210,21 @@ class Store:
 
 class MongoStore:
     def __init__(self, uri: str):
-        self.db = MongoClient(uri, serverSelectionTimeoutMS=10000)[MONGODB_DATABASE]
-        self.db.command("ping")
+        self.db = MongoClient(
+            uri,
+            tls=True,
+            tlsCAFile=certifi.where(),
+            serverSelectionTimeoutMS=10000,
+        )[MONGODB_DATABASE]
+        self._indexes_ready = False
+
+    def ensure_indexes(self):
+        if self._indexes_ready:
+            return
         self.db.users.create_index("normalized_username", unique=True)
         for name in ("enrolments", "challenges", "sessions"):
             self.db[name].create_index("expires_at", expireAfterSeconds=0)
+        self._indexes_ready = True
 
     @staticmethod
     def clean(document):
@@ -222,6 +233,7 @@ class MongoStore:
         return document
 
     def user(self, normalized):
+        self.ensure_indexes()
         return self.clean(self.db.users.find_one({"normalized_username": normalized}))
 
     def create_user(self, username, normalized, embedding):
@@ -242,6 +254,7 @@ class MongoStore:
     def session_user(self, token):
         if not token:
             return None
+        self.ensure_indexes()
         session = self.db.sessions.find_one({
             "token_hash": hashlib.sha256(token.encode()).hexdigest(), "expires_at": {"$gt": now()}
         })
@@ -269,6 +282,7 @@ class MongoStore:
         self.db.enrolments.delete_one({"_id": enrolment_id})
 
     def create_challenge(self, challenge_id, normalized, phrase):
+        self.ensure_indexes()
         self.db.challenges.insert_one({
             "_id": challenge_id, "normalized_username": normalized, "phrase": phrase,
             "expires_at": now() + timedelta(seconds=CHALLENGE_SECONDS), "used_at": None,
