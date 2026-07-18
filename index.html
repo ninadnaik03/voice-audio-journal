@@ -765,6 +765,16 @@
     --focus: #c7653f;
   }
 
+  .login-status.processing-message {
+    min-height: 3.2em;
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+
+  .login-status.processing-message.is-changing {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
   html[data-theme="dark"] {
     color-scheme: dark;
     --page: #1b1918;
@@ -2582,6 +2592,7 @@
     const prompt = document.getElementById('voice-prompt');
     const progress = document.getElementById('sample-progress');
     let processingMessageTimer = null;
+    let processingTransitionTimer = null;
     msg.className = 'status-msg';
     try {
       const username = usernameValue();
@@ -2614,6 +2625,7 @@
       status.textContent = 'Recording for 6 seconds…';
       const { blob, transcript } = await captureVoiceSample();
       const processingMessages = [
+        'Processing your voice securely…',
         'Speaking your thoughts aloud can make them easier to understand.',
         'Small reflections often reveal the clearest patterns.',
         'Your voice carries more than words—it holds the shape of a moment.',
@@ -2621,11 +2633,16 @@
         'Almost there—your voice is being securely verified.'
       ];
       let processingMessageIndex = 0;
+      status.classList.add('processing-message');
       status.textContent = processingMessages[processingMessageIndex];
       processingMessageTimer = setInterval(() => {
         processingMessageIndex = (processingMessageIndex + 1) % processingMessages.length;
-        status.textContent = processingMessages[processingMessageIndex];
-      }, 2800);
+        status.classList.add('is-changing');
+        processingTransitionTimer = setTimeout(() => {
+          status.textContent = processingMessages[processingMessageIndex];
+          status.classList.remove('is-changing');
+        }, 260);
+      }, 3400);
       const form = new FormData();
       form.append('audio', blob, 'voice.webm');
 
@@ -2665,6 +2682,8 @@
       if (loginMode === 'login') authState.challengeId = null;
     } finally {
       if (processingMessageTimer) clearInterval(processingMessageTimer);
+      if (processingTransitionTimer) clearTimeout(processingTransitionTimer);
+      status.classList.remove('processing-message', 'is-changing');
       btn.classList.remove('recording');
       isLoginRecording = false;
     }
