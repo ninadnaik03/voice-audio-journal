@@ -2501,7 +2501,12 @@
         : 'Cannot reach the secure voice service. Please wait a moment and try again.');
     }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail || 'Authentication service is unavailable.');
+    if (!response.ok) {
+      const detail = Array.isArray(data.detail)
+        ? data.detail.map(item => item?.msg || String(item)).join(' ')
+        : data.detail;
+      throw new Error(detail || 'Authentication service is unavailable.');
+    }
     return data;
   }
 
@@ -2520,9 +2525,19 @@
     const chunks = [];
     let transcript = '';
     let recognition;
+    let recognitionFinished = Promise.resolve();
     if (SpeechRecognitionAPI) {
       recognition = createRecognition();
-      recognition.onresult = event => { transcript = event.results[0][0].transcript; };
+      recognitionFinished = new Promise(resolve => {
+        recognition.onend = resolve;
+        recognition.onerror = resolve;
+      });
+      recognition.onresult = event => {
+        transcript = Array.from(event.results)
+          .map(result => result[0]?.transcript || '')
+          .join(' ')
+          .trim();
+      };
       try { recognition.start(); } catch (_) {}
     }
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
@@ -2533,6 +2548,10 @@
     await new Promise(resolve => setTimeout(resolve, seconds * 1000));
     recorder.stop();
     try { recognition?.stop(); } catch (_) {}
+    await Promise.race([
+      recognitionFinished,
+      new Promise(resolve => setTimeout(resolve, 1500))
+    ]);
     const blob = await stopped;
     stream.getTracks().forEach(track => track.stop());
     return { blob, transcript };
@@ -2600,6 +2619,9 @@
           setTimeout(() => showScreen('memories'), 500);
         }
       } else {
+        if (!transcript.trim()) {
+          throw new Error('The passphrase was not transcribed. Please speak clearly and try again.');
+        }
         form.append('username', username);
         form.append('challenge_id', authState.challengeId);
         form.append('transcript', transcript);

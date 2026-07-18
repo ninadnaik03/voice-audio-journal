@@ -469,9 +469,11 @@ async def login_verify(
     response: Response,
     username: str = Form(...),
     challenge_id: str = Form(...),
-    transcript: str = Form(...),
+    transcript: str = Form(""),
     audio: UploadFile = File(...),
 ):
+    if not transcript.strip():
+        raise HTTPException(400, "The passphrase was not transcribed. Please speak clearly and try again.")
     try:
         _, normalized = normalized_username(username)
         challenge = store.consume_challenge(challenge_id, normalized)
