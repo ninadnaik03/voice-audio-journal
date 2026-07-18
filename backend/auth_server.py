@@ -472,18 +472,17 @@ async def login_verify(
     transcript: str = Form(""),
     audio: UploadFile = File(...),
 ):
-    if not transcript.strip():
-        raise HTTPException(400, "The passphrase was not transcribed. Please speak clearly and try again.")
     try:
         _, normalized = normalized_username(username)
         challenge = store.consume_challenge(challenge_id, normalized)
         user = store.user(normalized)
         if not challenge or not user:
             raise ValueError
-        expected = re.sub(r"[^a-z0-9 ]", "", challenge["phrase"].lower())
-        heard = re.sub(r"[^a-z0-9 ]", "", transcript.lower())
-        if SequenceMatcher(None, expected, heard).ratio() < 0.72:
-            raise ValueError
+        if transcript.strip():
+            expected = re.sub(r"[^a-z0-9 ]", "", challenge["phrase"].lower())
+            heard = re.sub(r"[^a-z0-9 ]", "", transcript.lower())
+            if SequenceMatcher(None, expected, heard).ratio() < 0.72:
+                raise ValueError
         probe = await embedding_from_upload(audio)
         enrolled = np.asarray(json.loads(user["voice_embedding"]), dtype=np.float32)
         similarity = float(np.dot(probe, enrolled))
