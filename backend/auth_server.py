@@ -19,16 +19,14 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import soundfile as sf
-import torch
 import certifi
 from fastapi import Cookie, FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from speechbrain.inference.speaker import SpeakerRecognition
-from speechbrain.utils.fetching import LocalStrategy
 from pymongo import ASCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 
@@ -300,12 +298,15 @@ class MongoStore:
 
 
 store = MongoStore(MONGODB_URI) if MONGODB_URI else Store(DB_PATH)
-_model: SpeakerRecognition | None = None
+_model: Any | None = None
 
 
-def model() -> SpeakerRecognition:
+def model():
     global _model
     if _model is None:
+        from speechbrain.inference.speaker import SpeakerRecognition
+        from speechbrain.utils.fetching import LocalStrategy
+
         _model = SpeakerRecognition.from_hparams(
             source="speechbrain/spkrec-ecapa-voxceleb",
             savedir=str(MODEL_DIR),
@@ -334,6 +335,8 @@ async def embedding_from_upload(upload: UploadFile) -> np.ndarray:
 
 
 def embedding_from_bytes(raw: bytes, suffix: str) -> np.ndarray:
+    import torch
+
     with tempfile.TemporaryDirectory(prefix="sunset-auth-") as temp:
         source = Path(temp) / f"source{suffix}"
         wav = Path(temp) / "audio.wav"
