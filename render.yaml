@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: sunset-journal-auth
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: sunset_journal
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_SAMESITE
+        value: none
+      - key: SESSION_TTL_HOURS
+        value: "24"

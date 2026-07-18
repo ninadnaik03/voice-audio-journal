@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir -r requirements-auth.txt
 COPY auth_server.py .
 
 EXPOSE 7860
-CMD ["uvicorn", "auth_server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn auth_server:app --host 0.0.0.0 --port ${PORT:-7860}"]

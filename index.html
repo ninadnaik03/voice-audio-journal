@@ -2357,10 +2357,12 @@
   const STORAGE_KEY = 'voiceAudioJournal.entries.v1';
   const AUTH_API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? 'http://localhost:8001'
-    : (window.SUNSET_AUTH_API || '');
+    : (window.SUNSET_AUTH_API || 'https://sunset-journal-auth.onrender.com');
   let authState = { enrolmentId: null, prompts: [], sampleIndex: 0, challengeId: null, phrase: '' };
   let journalRecognition = null;
   let journalTranscript = '';
+  let authServiceReadyUntil = 0;
+  let authServiceWakePromise = null;
 
   function createRecognition({ continuous = false, interimResults = false } = {}) {
     if (!SpeechRecognitionAPI) {
@@ -2455,12 +2457,47 @@
     }
   }
 
+  function showAuthServiceStatus(message) {
+    const msg = document.getElementById('login-msg');
+    if (!msg || !message) return;
+    msg.className = 'status-msg info';
+    msg.textContent = message;
+  }
+
+  async function wakeAuthService() {
+    if (!AUTH_API_BASE || Date.now() < authServiceReadyUntil) return;
+    if (authServiceWakePromise) return authServiceWakePromise;
+    authServiceWakePromise = (async () => {
+      showAuthServiceStatus('Starting the secure voice service. This can take about a minute on the free server…');
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        try {
+          const response = await fetch(`${AUTH_API_BASE}/api/health`, { credentials: 'include' });
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.ok) {
+            authServiceReadyUntil = Date.now() + 10 * 60 * 1000;
+            return;
+          }
+        } catch (_) {}
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+      throw new Error('The secure voice service is taking too long to start. Please wait a moment and try again.');
+    })();
+    try {
+      await authServiceWakePromise;
+    } finally {
+      authServiceWakePromise = null;
+    }
+  }
+
   async function authRequest(path, options = {}) {
+    await wakeAuthService();
     let response;
     try {
       response = await fetch(`${AUTH_API_BASE}${path}`, { credentials: 'include', ...options });
     } catch (_) {
-      throw new Error('Cannot reach the voice service. Start the Python backend on port 8001, then try again.');
+      throw new Error(location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+        ? 'Cannot reach the voice service. Start the Python backend on port 8001, then try again.'
+        : 'Cannot reach the secure voice service. Please wait a moment and try again.');
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || 'Authentication service is unavailable.');
