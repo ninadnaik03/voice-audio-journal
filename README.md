@@ -1,44 +1,113 @@
-# Voice Audio Journal
+# Sunset Journal
 
-A private, browser-based voice journal with voice-passphrase access, live
-speech-to-text transcription, reflection summaries, and journal history.
+A private voice journal with username-based speaker enrolment, voice
+verification, live transcription, reflection summaries, and browser-local
+journal history.
 
-## Features
+## Voice account flow
 
-- Register and verify the spoken passphrase `open`
-- Record journal entries with live transcription
-- Pause, resume, finish, or discard a recording
-- Generate a local reflection and mood summary
-- Browse saved journal history
-- Keep journal content on the user's device using browser storage
+Registration records three prompted samples. The local authentication service
+extracts a normalized 192-dimensional ECAPA-TDNN speaker embedding from each
+sample, averages them, and stores only the resulting profile in SQLite.
 
-## Deploy to Vercel
+Login creates a short-lived, single-use sentence challenge. Access requires both
+a reasonable transcript match and a cosine similarity above the configured
+speaker threshold. Sessions use a random HttpOnly cookie; only a hash of the
+session token is stored.
 
-No environment variables, database, build command, or API keys are required.
+Raw enrolment and login recordings are converted in a temporary directory and
+deleted immediately after processing.
 
-1. Import this GitHub repository in Vercel.
-2. Leave **Framework Preset** as `Other`.
-3. Leave the build and output settings at their defaults.
-4. Select **Deploy**.
+## Local requirements
 
-The included `vercel.json` supplies deployment and microphone security headers.
+- Python 3.11 or 3.12
+- Node.js
+- FFmpeg available on `PATH`
+- Chrome or Edge
 
-## Run locally
+Create a Python environment and install the authentication dependencies:
 
-Serve the repository instead of opening the HTML file directly:
+```bash
+cd backend
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements-auth.txt
+copy .env.example .env
+uvicorn auth_server:app --reload --port 8001
+```
+
+## Free production setup
+
+The static website runs on Vercel. The voice-auth API is packaged for a
+Hugging Face Docker Space in `backend/Dockerfile`, and account records can use
+MongoDB Atlas M0.
+
+Production secrets belong in the Space settings, never in Git:
+
+```env
+MONGODB_URI=mongodb+srv://...
+MONGODB_DATABASE=sunset_journal
+FRONTEND_ORIGIN=https://your-vercel-domain.vercel.app
+SESSION_COOKIE_SECURE=true
+SESSION_COOKIE_SAMESITE=none
+```
+
+After the Space URL is created, set this before the main application script:
+
+```html
+<script>window.SUNSET_AUTH_API = 'https://your-space.hf.space';</script>
+```
+
+Only usernames, normalized speaker embeddings, challenges, and sessions are
+stored in Atlas. Raw authentication recordings are processed in temporary
+files and deleted. Journal entries remain in the user's browser storage.
+
+In a second terminal, run the frontend:
 
 ```bash
 node serve.mjs
 ```
 
-Then open `http://localhost:8000` in Chrome or Edge.
+Open `http://localhost:8000`.
 
-## Browser support and privacy
+On Windows, the backend also automatically checks
+`%USERPROFILE%\OneDrive\Pictures\ffmpeg\bin\ffmpeg.exe`. If FFmpeg is stored
+elsewhere, set its full executable path in `backend/.env`:
 
-Live transcription uses the browser Web Speech API and currently works best in
-Chrome and Edge. Journal entries and registration state are stored in that
-browser's local storage. Clearing site data removes them, and entries do not
-automatically sync between devices.
+```text
+FFMPEG_PATH=C:\path\to\ffmpeg\bin\ffmpeg.exe
+```
 
-The legacy Flask prototype remains under `backend/` for reference, but Vercel
-serves the root `index.html` and does not run the Python backend.
+The speaker model downloads on first use and is cached under
+`backend/model_cache/`. Local account data is stored in `backend/data/auth.db`.
+Both locations are ignored by Git.
+
+## Configuration
+
+`VOICE_VERIFICATION_THRESHOLD` defaults to `0.72`. This is only a development
+starting point and must be calibrated with representative genuine-user and
+impostor recordings before production use.
+
+For HTTPS production hosting, set `SESSION_COOKIE_SECURE=true` and restrict
+`FRONTEND_ORIGIN` to the exact frontend origin.
+
+## Privacy and security limitations
+
+Journal transcripts and summaries still remain in the browser's local storage.
+The server stores usernames, normalized speaker embeddings, challenges, and
+hashed session tokens.
+
+This development implementation uses a pretrained speaker-embedding model for
+voice verification. It is not production-grade biometric security and does not
+yet include dedicated anti-spoofing or liveness detection.
+
+It can reduce casual cross-account access, but it cannot reliably stop replayed
+recordings, cloned voices, synthetic speech, deepfakes, or a determined
+impersonator. Voice can also vary with illness, microphones, and background
+noise, so legitimate users may occasionally be rejected.
+
+## Deployment
+
+The current Vercel static deployment cannot run the PyTorch/SpeechBrain service.
+Do not deploy this authentication phase until the Python service is hosted on a
+suitable container or VM and the frontend API base URL is configured for it.

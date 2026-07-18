@@ -6,3 +6,7 @@ journal.db
 recordings/
 pretrained_models/
 .vercel/
+backend/data/
+backend/model_cache/
+backend/temp/
+backend/.venv*/

@@ -1324,6 +1324,63 @@
     color: var(--text-secondary);
   }
 
+  .login-card .access-note {
+    margin: 24px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .username-field {
+    display: grid;
+    gap: 8px;
+    margin: 22px 0 16px;
+    text-align: left;
+  }
+
+  .username-field span {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .username-field input {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    outline: 0;
+    color: var(--text);
+    background: var(--surface-raised);
+    font: inherit;
+  }
+
+  .username-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .voice-prompt {
+    min-height: 58px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: var(--surface-soft);
+    font: 600 14px/1.45 'Playfair Display', serif;
+  }
+
+  .sample-progress {
+    min-height: 20px;
+    margin: 10px 0 4px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
   .login-tabs {
     padding: 4px;
     border: 1px solid var(--border);
@@ -1819,7 +1876,7 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4v5a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4Zm-7 9a7 7 0 0 0 14 0m-7 7v4m-4 0h8"/></svg>
             Start Your Journal
           </button>
-          <button class="btn-secondary" onclick="showScreen('login'); setLoginMode('register')">Register Voice</button>
+          <button class="btn-secondary" onclick="showScreen('login'); setLoginMode('register')">Create Voice Account</button>
         </div>
         <p class="hero-note">Your entries stay on this device.</p>
       </div>
@@ -1838,8 +1895,8 @@
       <div class="feature-list">
         <article class="feature-item">
           <span class="feature-number">01</span>
-          <h3>Voice access</h3>
-          <p>Register a spoken passphrase for simple, personal access.</p>
+          <h3>Voice account</h3>
+          <p>Enrol your voice and verify it with a fresh spoken challenge.</p>
         </article>
         <article class="feature-item">
           <span class="feature-number">02</span>
@@ -1925,14 +1982,21 @@
       <button class="login-tab" id="tab-register" onclick="setLoginMode('register')">Register</button>
     </div>
 
-    <div class="passphrase-badge" id="passphrase-display">"open"</div>
+    <label class="username-field">
+      <span>Username</span>
+      <input id="auth-username" type="text" minlength="3" maxlength="30" autocomplete="username" placeholder="Your username">
+    </label>
+
+    <div class="voice-prompt" id="voice-prompt">Enter your username, then request a voice challenge.</div>
+    <div class="sample-progress" id="sample-progress"></div>
 
     <button class="mic-button" id="login-mic-btn" onclick="handleLoginMic()">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
     </button>
 
-    <div class="login-status" id="login-status">Click the mic and say the passphrase</div>
+    <div class="login-status" id="login-status">Click the microphone to begin</div>
     <div class="status-msg" id="login-msg"></div>
+    <p class="access-note">Voice matching uses a speaker-embedding model. It raises the barrier to casual access, but does not prevent replay recordings, cloned voices, or advanced impersonation.</p>
   </div>
 </div>
 
@@ -2075,13 +2139,18 @@
 
   function setLoginMode(mode) {
     loginMode = mode;
+    authState = { enrolmentId: null, prompts: [], sampleIndex: 0, challengeId: null, phrase: '' };
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
     document.getElementById('tab-register').classList.toggle('active', mode === 'register');
-    document.getElementById('login-title').textContent = mode === 'login' ? 'Welcome Back' : 'Register Your Voice';
+    document.getElementById('login-title').textContent = mode === 'login' ? 'Welcome Back' : 'Create Your Voice Account';
     document.getElementById('login-desc').textContent = mode === 'login'
-      ? 'Say the passphrase below to unlock your journal'
-      : 'Say the passphrase to register your voice';
-    document.getElementById('login-status').textContent = 'Click the mic and say the passphrase';
+      ? 'Enter your username and verify your voice'
+      : 'Enrol three short samples of your natural speaking voice';
+    document.getElementById('voice-prompt').textContent = mode === 'login'
+      ? 'Enter your username, then request a voice challenge.'
+      : 'Record in a quiet place. Speak naturally and keep a consistent microphone distance.';
+    document.getElementById('sample-progress').textContent = '';
+    document.getElementById('login-status').textContent = 'Click the microphone to begin';
     document.getElementById('login-msg').className = 'status-msg';
   }
 
@@ -2121,7 +2190,7 @@
               isAuthenticated = true;
               setTimeout(() => { showScreen('memories'); }, 1000);
             } else {
-              status.textContent = 'Voice registered! Now login.';
+              status.textContent = 'Passphrase saved! Now continue to login.';
               setTimeout(() => setLoginMode('login'), 2000);
             }
           } else {
@@ -2286,7 +2355,10 @@
   // Vercel-ready browser runtime. Journal data never leaves this browser.
   const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
   const STORAGE_KEY = 'voiceAudioJournal.entries.v1';
-  const VOICE_KEY = 'voiceAudioJournal.voice.v1';
+  const AUTH_API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? 'http://localhost:8001'
+    : (window.SUNSET_AUTH_API || '');
+  let authState = { enrolmentId: null, prompts: [], sampleIndex: 0, challengeId: null, phrase: '' };
   let journalRecognition = null;
   let journalTranscript = '';
 
@@ -2352,12 +2424,12 @@
         if (loginMode === 'register') {
           localStorage.setItem(VOICE_KEY, JSON.stringify({ passphrase: 'open', registeredAt: new Date().toISOString() }));
           msg.className = 'status-msg success';
-          msg.textContent = 'Voice passphrase registered successfully!';
-          status.textContent = 'Registered! Now login.';
+          msg.textContent = 'Spoken passphrase enabled in this browser.';
+          status.textContent = 'Passphrase saved! Now continue to login.';
           setTimeout(() => setLoginMode('login'), 1200);
         } else if (!localStorage.getItem(VOICE_KEY)) {
           msg.className = 'status-msg error';
-          msg.textContent = 'No voice passphrase is registered on this browser yet.';
+          msg.textContent = 'Spoken passphrase access has not been set up in this browser yet.';
           setLoginMode('register');
         } else {
           msg.className = 'status-msg success';
@@ -2382,6 +2454,133 @@
       isLoginRecording = false;
     }
   }
+
+  async function authRequest(path, options = {}) {
+    let response;
+    try {
+      response = await fetch(`${AUTH_API_BASE}${path}`, { credentials: 'include', ...options });
+    } catch (_) {
+      throw new Error('Cannot reach the voice service. Start the Python backend on port 8001, then try again.');
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || 'Authentication service is unavailable.');
+    return data;
+  }
+
+  function usernameValue() {
+    const value = document.getElementById('auth-username').value.trim();
+    if (!/^[A-Za-z0-9_.-]{3,30}$/.test(value)) {
+      throw new Error('Use 3–30 letters, numbers, underscores, hyphens, or periods.');
+    }
+    return value;
+  }
+
+  async function captureVoiceSample(seconds = 6) {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const type = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+    const recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    let transcript = '';
+    let recognition;
+    if (SpeechRecognitionAPI) {
+      recognition = createRecognition();
+      recognition.onresult = event => { transcript = event.results[0][0].transcript; };
+      try { recognition.start(); } catch (_) {}
+    }
+    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+    const stopped = new Promise(resolve => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }));
+    });
+    recorder.start();
+    await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+    recorder.stop();
+    try { recognition?.stop(); } catch (_) {}
+    const blob = await stopped;
+    stream.getTracks().forEach(track => track.stop());
+    return { blob, transcript };
+  }
+
+  handleLoginMic = async function () {
+    if (isLoginRecording) return;
+    const btn = document.getElementById('login-mic-btn');
+    const status = document.getElementById('login-status');
+    const msg = document.getElementById('login-msg');
+    const prompt = document.getElementById('voice-prompt');
+    const progress = document.getElementById('sample-progress');
+    msg.className = 'status-msg';
+    try {
+      const username = usernameValue();
+      if (loginMode === 'register' && !authState.enrolmentId) {
+        const data = await authRequest('/api/auth/register/start', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+        authState.enrolmentId = data.enrolmentId;
+        authState.prompts = data.prompts;
+        prompt.textContent = data.prompts[0];
+        progress.textContent = 'Sample 1 of 3';
+        status.textContent = 'Click the microphone and read the sentence';
+        return;
+      }
+      if (loginMode === 'login' && !authState.challengeId) {
+        const data = await authRequest('/api/auth/login/challenge', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+        authState.challengeId = data.challengeId;
+        authState.phrase = data.phrase;
+        prompt.textContent = data.phrase;
+        status.textContent = 'Click the microphone and read the sentence';
+        return;
+      }
+
+      isLoginRecording = true;
+      btn.classList.add('recording');
+      status.textContent = 'Recording for 6 seconds…';
+      const { blob, transcript } = await captureVoiceSample();
+      status.textContent = 'Processing voice…';
+      const form = new FormData();
+      form.append('audio', blob, 'voice.webm');
+
+      if (loginMode === 'register') {
+        form.append('enrolment_id', authState.enrolmentId);
+        form.append('sample_index', String(authState.sampleIndex));
+        await authRequest('/api/auth/register/sample', { method: 'POST', body: form });
+        authState.sampleIndex += 1;
+        if (authState.sampleIndex < 3) {
+          prompt.textContent = authState.prompts[authState.sampleIndex];
+          progress.textContent = `Sample ${authState.sampleIndex + 1} of 3`;
+          status.textContent = 'Sample accepted. Click to record the next sentence.';
+        } else {
+          const data = await authRequest('/api/auth/register/complete', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enrolmentId: authState.enrolmentId })
+          });
+          msg.className = 'status-msg success';
+          msg.textContent = `Voice account created for ${data.username}.`;
+          isAuthenticated = true;
+          setTimeout(() => showScreen('memories'), 500);
+        }
+      } else {
+        form.append('username', username);
+        form.append('challenge_id', authState.challengeId);
+        form.append('transcript', transcript);
+        const data = await authRequest('/api/auth/login/verify', { method: 'POST', body: form });
+        msg.className = 'status-msg success';
+        msg.textContent = `Welcome back, ${data.username}.`;
+        isAuthenticated = true;
+        setTimeout(() => showScreen('memories'), 500);
+      }
+    } catch (error) {
+      msg.className = 'status-msg error';
+      msg.textContent = error.message;
+      status.textContent = 'Please try again';
+      if (loginMode === 'login') authState.challengeId = null;
+    } finally {
+      btn.classList.remove('recording');
+      isLoginRecording = false;
+    }
+  };
 
   async function startRecording() {
     seconds = 0;

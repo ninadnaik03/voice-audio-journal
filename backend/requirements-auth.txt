@@ -1,0 +1,9 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.34,<1
+python-multipart>=0.0.20,<1
+numpy>=1.26,<3
+torch>=2.4,<3
+torchaudio>=2.4,<3
+speechbrain>=1.0,<2
+soundfile>=0.13,<1
+pymongo[srv]>=4.10,<5
