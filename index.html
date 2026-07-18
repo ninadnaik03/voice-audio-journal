@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Journal</title>
+<meta name="theme-color" content="#f7f0e7">
+<title>Sunset Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script>
+  (() => {
+    const savedTheme = localStorage.getItem('sunsetJournal.theme');
+    const preferredTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = savedTheme || preferredTheme;
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -729,51 +739,1179 @@
   .status-msg.success { background: #EEF3E6; color: #3B6D11; display: block; }
   .status-msg.error { background: #FCEBEB; color: #A32D2D; display: block; }
   .status-msg.info { background: #E6F1FB; color: #185FA5; display: block; }
+
+  /* 2026 editorial refresh */
+  :root {
+    color-scheme: light;
+    --page: #f7f0e7;
+    --surface: #fffaf4;
+    --surface-soft: #f1e4d7;
+    --surface-raised: #fffdf9;
+    --text: #2d2019;
+    --text-secondary: #6f5d52;
+    --text-muted: #927c6e;
+    --accent: #a94e2c;
+    --accent-hover: #873b23;
+    --accent-soft: #edd0bd;
+    --border: #dfcfc1;
+    --border-strong: #c9b2a2;
+    --shadow: 0 18px 55px rgba(75, 43, 27, 0.1);
+    --shadow-small: 0 8px 24px rgba(75, 43, 27, 0.08);
+    --success-bg: #edf3e7;
+    --success-text: #3d681e;
+    --error-bg: #f9e8e5;
+    --error-text: #933a31;
+    --header-bg: rgba(247, 240, 231, 0.93);
+    --focus: #c7653f;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #1b1918;
+    --surface: #24211f;
+    --surface-soft: #2c2724;
+    --surface-raised: #292522;
+    --text: #f5ede5;
+    --text-secondary: #c4b5aa;
+    --text-muted: #9f8d81;
+    --accent: #db805b;
+    --accent-hover: #ec9673;
+    --accent-soft: #543224;
+    --border: #443a34;
+    --border-strong: #5e4c42;
+    --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+    --shadow-small: 0 8px 24px rgba(0, 0, 0, 0.2);
+    --success-bg: #273624;
+    --success-text: #b8dca3;
+    --error-bg: #412725;
+    --error-text: #f2aaa0;
+    --header-bg: rgba(27, 25, 24, 0.93);
+    --focus: #e58a66;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+    background: var(--page);
+  }
+
+  body {
+    background: var(--page);
+    color: var(--text);
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  body,
+  nav,
+  .login-card,
+  .stat-card,
+  .summary-card,
+  .entry-card,
+  .live-transcript,
+  .entry-detail-body,
+  .feature-item,
+  .creator-card,
+  .site-footer,
+  button,
+  a {
+    transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--focus) 55%, transparent);
+    outline-offset: 3px;
+  }
+
+  .site-nav {
+    min-height: 76px;
+    padding: 14px clamp(20px, 5vw, 76px);
+    background: var(--header-bg);
+    border-color: var(--border);
+    backdrop-filter: blur(12px);
+    gap: 28px;
+  }
+
+  .nav-logo {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--accent);
+    font: italic 600 clamp(20px, 2vw, 25px)/1.1 'Playfair Display', serif;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .nav-links {
+    align-items: center;
+    gap: 26px;
+    margin-left: auto;
+  }
+
+  .nav-links a,
+  .nav-links button {
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background: transparent;
+    padding: 5px 0;
+    color: var(--text-secondary);
+    font: 500 13px/1.2 'Lato', sans-serif;
+    letter-spacing: .04em;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .nav-links a:hover,
+  .nav-links button:hover,
+  .nav-links button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .privacy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: var(--surface);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .privacy-badge svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+  }
+
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    background: var(--surface);
+    cursor: pointer;
+  }
+
+  .theme-toggle:hover {
+    color: var(--accent);
+    border-color: var(--border-strong);
+  }
+
+  .theme-toggle svg {
+    grid-area: 1 / 1;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+
+  .moon-icon {
+    opacity: 0;
+    transform: rotate(-25deg) scale(.7);
+  }
+
+  [data-theme="dark"] .sun-icon {
+    opacity: 0;
+    transform: rotate(25deg) scale(.7);
+  }
+
+  [data-theme="dark"] .moon-icon {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+
+  .btn-new-entry,
+  .btn-primary {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff9f3;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .btn-new-entry {
+    padding: 10px 17px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .btn-new-entry:hover,
+  .btn-primary:hover {
+    border-color: var(--accent-hover);
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+  }
+
+  #screen-welcome {
+    display: none;
+    padding: 0;
+    min-height: auto;
+  }
+
+  #screen-welcome.active {
+    display: block;
+  }
+
+  .welcome-screen main {
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(400px, 1.1fr);
+    align-items: center;
+    min-height: calc(100vh - 76px);
+    padding: clamp(58px, 8vw, 110px) 0;
+    gap: clamp(42px, 7vw, 92px);
+  }
+
+  .welcome-text {
+    max-width: 560px;
+  }
+
+  .eyebrow {
+    display: block;
+    margin-bottom: 18px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+
+  .welcome-text h1 {
+    max-width: 620px;
+    margin: 0 0 24px;
+    color: var(--text);
+    font-size: clamp(52px, 6.4vw, 86px);
+    font-weight: 500;
+    line-height: .98;
+    letter-spacing: -.045em;
+  }
+
+  .welcome-text h1 em {
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .welcome-text > p {
+    max-width: 500px;
+    color: var(--text-secondary);
+    font-size: clamp(16px, 1.5vw, 19px);
+    line-height: 1.75;
+  }
+
+  .welcome-actions {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 32px 0 16px;
+    gap: 12px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    min-height: 50px;
+    padding: 13px 21px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .btn-primary svg {
+    width: 18px;
+    height: 18px;
+    margin-right: 9px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+  }
+
+  .btn-secondary {
+    border-color: var(--border-strong);
+    color: var(--text);
+    background: transparent;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+    transform: translateY(-1px);
+  }
+
+  .welcome-text .hero-note {
+    margin-top: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .welcome-image {
+    position: relative;
+    height: min(680px, 72vh);
+    min-height: 470px;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 50% 50% 10px 10px / 32% 32% 10px 10px;
+    background: var(--surface-soft);
+    box-shadow: var(--shadow);
+  }
+
+  .welcome-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(42, 24, 15, .7), transparent 40%);
+    pointer-events: none;
+  }
+
+  .welcome-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .welcome-image figcaption {
+    position: absolute;
+    z-index: 1;
+    right: 30px;
+    bottom: 26px;
+    left: 30px;
+    color: #fff8f2;
+    font: italic 400 clamp(17px, 2vw, 23px)/1.35 'Playfair Display', serif;
+  }
+
+  .feature-section,
+  .creators-section {
+    padding: clamp(78px, 10vw, 132px) 0;
+    border-top: 1px solid var(--border);
+    content-visibility: auto;
+    contain-intrinsic-size: auto 850px;
+  }
+
+  .section-heading {
+    max-width: 700px;
+    margin-bottom: clamp(42px, 6vw, 68px);
+  }
+
+  .section-heading h2 {
+    margin: 0 0 18px;
+    color: var(--text);
+    font: 500 clamp(38px, 5vw, 62px)/1.07 'Playfair Display', serif;
+    letter-spacing: -.025em;
+  }
+
+  .section-heading p {
+    color: var(--text-secondary);
+    font-size: 17px;
+    line-height: 1.7;
+  }
+
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--border-strong);
+  }
+
+  .feature-item {
+    min-height: 230px;
+    padding: 28px 26px 20px 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .feature-item + .feature-item {
+    padding-left: 26px;
+  }
+
+  .feature-item:last-child {
+    border-right: 0;
+  }
+
+  .feature-number {
+    display: block;
+    margin-bottom: 50px;
+    color: var(--accent);
+    font: italic 500 15px/1 'Playfair Display', serif;
+  }
+
+  .feature-item h3 {
+    margin: 0 0 12px;
+    color: var(--text);
+    font: 600 24px/1.2 'Playfair Display', serif;
+  }
+
+  .feature-item p {
+    max-width: 230px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .creator-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(24px, 4vw, 46px);
+  }
+
+  .creator-card {
+    display: grid;
+    grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr);
+    min-height: 360px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow-small);
+  }
+
+  .creator-card > img {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+    object-position: center 30%;
+    background: var(--surface-soft);
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  .creator-card:nth-child(2) > img {
+    object-position: center 42%;
+  }
+
+  .creator-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 34px 30px 28px;
+  }
+
+  .creator-content h3 {
+    margin: 0 0 7px;
+    color: var(--text);
+    font: 600 30px/1.15 'Playfair Display', serif;
+  }
+
+  .creator-content p {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  .creator-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .creator-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text-secondary);
+    background: var(--surface-raised);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .creator-links a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .creator-links svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+
+  .site-footer {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 30px 0 36px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    gap: 20px;
+  }
+
+  .site-footer strong {
+    color: var(--text);
+    font: italic 600 18px/1 'Playfair Display', serif;
+  }
+
+  .site-footer span:last-child {
+    text-align: right;
+  }
+
+  /* Existing journal views */
+  #screen-login,
+  #screen-memories,
+  #screen-recording,
+  #screen-entry {
+    background: var(--page);
+    color: var(--text);
+  }
+
+  #screen-login {
+    padding: 76px 20px;
+  }
+
+  .login-card {
+    width: min(440px, 100%);
+    padding: clamp(30px, 5vw, 48px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .login-card h2,
+  .memories-header h2,
+  .recording-header h2,
+  .entry-detail-header h2,
+  .memories-list h3,
+  .transcript-section h3 {
+    color: var(--text);
+  }
+
+  .login-card h2 {
+    font-size: 36px;
+  }
+
+  .login-card p,
+  .login-status,
+  .memories-header p,
+  .recording-header p,
+  .entry-meta,
+  .entry-tagline {
+    color: var(--text-secondary);
+  }
+
+  .login-tabs {
+    padding: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+  }
+
+  .login-tab {
+    color: var(--text-secondary);
+  }
+
+  .login-tab.active {
+    color: var(--accent);
+    background: var(--surface);
+    box-shadow: var(--shadow-small);
+  }
+
+  .passphrase-badge {
+    border-color: var(--border);
+    color: var(--accent);
+    background: var(--surface-soft);
+  }
+
+  .mic-button,
+  .timer-circle {
+    background: var(--accent);
+    box-shadow: 0 0 0 12px var(--accent-soft), var(--shadow-small);
+  }
+
+  .mic-button:hover {
+    background: var(--accent-hover);
+  }
+
+  .mic-button.recording {
+    box-shadow: 0 0 0 12px var(--accent-soft), 0 0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .status-msg.success {
+    color: var(--success-text);
+    background: var(--success-bg);
+  }
+
+  .status-msg.error {
+    color: var(--error-text);
+    background: var(--error-bg);
+  }
+
+  #screen-memories,
+  #screen-recording,
+  #screen-entry {
+    padding-right: max(24px, calc((100vw - 1080px) / 2));
+    padding-left: max(24px, calc((100vw - 1080px) / 2));
+  }
+
+  .memories-header,
+  .recording-header {
+    max-width: 680px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .memories-stats {
+    grid-template-columns: minmax(190px, .35fr) minmax(0, 1fr);
+    max-width: 950px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .stat-card,
+  .summary-card,
+  .entry-card,
+  .entry-detail-body,
+  .live-transcript {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-small);
+  }
+
+  .summary-card {
+    background: var(--surface-soft);
+  }
+
+  .summary-card h3,
+  .summary-card p {
+    color: var(--text);
+  }
+
+  .btn-play,
+  .back-btn {
+    color: var(--accent);
+    border-color: var(--border-strong);
+    background: var(--surface);
+  }
+
+  .entries-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .entry-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+
+  .entry-date,
+  .entry-time,
+  .entry-preview,
+  .transcript-text,
+  .reflection-section > p,
+  .reflection-prompt p {
+    color: var(--text-secondary);
+  }
+
+  .entry-title,
+  .timer-text {
+    color: var(--text);
+  }
+
+  .waveform-bar {
+    background: var(--border-strong);
+  }
+
+  .waveform-bar.active,
+  .ctrl-btn.finish .ctrl-icon {
+    background: var(--accent);
+  }
+
+  .ctrl-btn {
+    color: var(--text-secondary);
+  }
+
+  .ctrl-icon {
+    border-color: var(--border);
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .reflection-section {
+    border-color: var(--border);
+    background: var(--surface-soft);
+  }
+
+  .reflection-label,
+  .prompt-label {
+    color: var(--accent);
+  }
+
+  .reflection-prompt {
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  @media (max-width: 1024px) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr) minmax(340px, .85fr);
+      gap: 44px;
+    }
+
+    .welcome-text h1 {
+      font-size: clamp(48px, 7vw, 68px);
+    }
+
+    .creator-card {
+      grid-template-columns: 1fr;
+    }
+
+    .creator-card > img {
+      height: 360px;
+      min-height: 0;
+    }
+
+    .creator-content {
+      min-height: 210px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .site-nav {
+      min-height: 68px;
+      padding: 12px 20px;
+      gap: 12px;
+      backdrop-filter: none;
+    }
+
+    .public-nav,
+    .privacy-badge {
+      display: none;
+    }
+
+    .app-nav {
+      margin-left: auto;
+      gap: 14px;
+    }
+
+    .nav-actions {
+      margin-left: auto;
+    }
+
+    .app-nav + .nav-actions {
+      margin-left: 0;
+    }
+
+    .btn-new-entry {
+      padding: 9px 12px;
+    }
+
+    .theme-toggle,
+    .btn-new-entry,
+    .nav-links a,
+    .nav-links button,
+    .creator-links a {
+      min-height: 44px;
+    }
+
+    .welcome-screen main,
+    .site-footer {
+      width: min(100% - 32px, 620px);
+    }
+
+    .hero {
+      grid-template-columns: 1fr;
+      min-height: auto;
+      padding: 62px 0 74px;
+    }
+
+    .welcome-text {
+      max-width: none;
+    }
+
+    .welcome-text h1 {
+      max-width: 600px;
+      font-size: clamp(46px, 13vw, 66px);
+    }
+
+    .welcome-image {
+      height: min(540px, 72vh);
+      min-height: 430px;
+    }
+
+    .feature-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .feature-item:nth-child(2) {
+      border-right: 0;
+    }
+
+    .feature-item:nth-child(n + 3) {
+      border-top: 1px solid var(--border);
+    }
+
+    .feature-item:nth-child(3) {
+      padding-left: 0;
+    }
+
+    .creator-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .creator-card {
+      grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr);
+      box-shadow: 0 5px 16px rgba(50, 30, 20, .08);
+    }
+
+    .creator-card > img {
+      height: 100%;
+      min-height: 340px;
+    }
+
+    .creator-content {
+      min-height: 340px;
+    }
+
+    .site-footer {
+      grid-template-columns: 1fr;
+      text-align: left;
+    }
+
+    .site-footer span:last-child {
+      text-align: left;
+    }
+
+    .entries-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .entry-detail-body {
+      grid-template-columns: 1fr;
+    }
+
+    .reflection-section {
+      border-left: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .welcome-image,
+    .login-card,
+    .entry-detail-body {
+      box-shadow: 0 8px 24px rgba(50, 30, 20, .1);
+    }
+  }
+
+  @media (max-width: 520px) {
+    .site-nav {
+      align-items: center;
+    }
+
+    .nav-logo {
+      font-size: 19px;
+    }
+
+    .app-nav {
+      display: none !important;
+    }
+
+    .theme-toggle {
+      width: 44px;
+      height: 44px;
+    }
+
+    .btn-new-entry {
+      font-size: 12px;
+    }
+
+    .hero {
+      gap: 38px;
+      padding-top: 48px;
+    }
+
+    .welcome-text h1 {
+      font-size: clamp(43px, 13vw, 56px);
+      line-height: 1.02;
+    }
+
+    .welcome-text > p {
+      font-size: 16px;
+    }
+
+    .welcome-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+    }
+
+    .welcome-image {
+      min-height: 380px;
+      height: 115vw;
+      max-height: 500px;
+      border-radius: 45% 45% 8px 8px / 25% 25% 8px 8px;
+    }
+
+    .feature-section,
+    .creators-section {
+      padding: 72px 0;
+    }
+
+    .section-heading h2 {
+      font-size: 38px;
+    }
+
+    .section-heading p {
+      font-size: 15px;
+    }
+
+    .feature-list {
+      grid-template-columns: 1fr;
+    }
+
+    .feature-item,
+    .feature-item + .feature-item,
+    .feature-item:nth-child(3) {
+      min-height: auto;
+      padding: 25px 0 28px;
+      border-right: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .feature-item:first-child {
+      border-top: 0;
+    }
+
+    .feature-number {
+      margin-bottom: 24px;
+    }
+
+    .feature-item p {
+      max-width: 330px;
+    }
+
+    .creator-card {
+      grid-template-columns: 1fr;
+    }
+
+    .creator-card > img {
+      height: auto;
+      min-height: 0;
+      max-height: none;
+      aspect-ratio: auto;
+      object-fit: contain;
+    }
+
+    .creator-content {
+      min-height: 205px;
+      padding: 26px 24px 24px;
+    }
+
+    .creator-content h3 {
+      font-size: 27px;
+    }
+
+    #screen-login,
+    #screen-memories,
+    #screen-recording,
+    #screen-entry {
+      padding-right: 18px;
+      padding-left: 18px;
+    }
+
+    .memories-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .recording-controls {
+      gap: 20px;
+    }
+
+    .entry-detail-body {
+      border-radius: 12px;
+    }
+
+    .site-nav,
+    .creator-card,
+    .welcome-image,
+    .login-card,
+    .entry-detail-body {
+      box-shadow: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="nav-logo">Sunset Journal</div>
-  <ul class="nav-links" id="nav-links" style="display:none">
-    <li><a onclick="showScreen('memories')" id="nav-memories">Memories</a></li>
-    <li><a onclick="showScreen('welcome')" id="nav-home">Library</a></li>
-    <li><a href="#">Settings</a></li>
+<nav class="site-nav" aria-label="Main navigation">
+  <button class="nav-logo" type="button" onclick="showScreen('welcome')" aria-label="Sunset Journal home">Sunset Journal</button>
+  <ul class="nav-links public-nav" id="public-nav">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#creators">Creators</a></li>
   </ul>
-  <button class="btn-new-entry" id="btn-new-entry" style="display:none" onclick="showScreen('recording'); startRecording()">+ New Entry</button>
+  <ul class="nav-links app-nav" id="nav-links" style="display:none">
+    <li><button type="button" onclick="showScreen('memories')" id="nav-memories">Memories</button></li>
+    <li><button type="button" onclick="showScreen('welcome')" id="nav-home">Home</button></li>
+  </ul>
+  <div class="nav-actions">
+    <span class="privacy-badge" aria-label="Your journal data stays private and local">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a1 1 0 0 1 1 1v9H5v-9a1 1 0 0 1 1-1Zm3 0h6V7a3 3 0 0 0-6 0v3Z"/></svg>
+      <span>Private &amp; local</span>
+    </span>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme" aria-pressed="false">
+      <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4V2m0 20v-2M4 12H2m20 0h-2m-2.34-5.66 1.42-1.42M4.92 19.08l1.42-1.42m0-11.32L4.92 4.92m14.16 14.16-1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+      <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg>
+    </button>
+    <button class="btn-new-entry" id="btn-new-entry" style="display:none" onclick="showScreen('recording'); startRecording()">New entry</button>
+  </div>
 </nav>
 
 <!-- WELCOME SCREEN -->
-<div class="screen active" id="screen-welcome">
-  <div class="welcome-text">
-    <h1>Speak your <em>peace</em> into the evening.</h1>
-    <p>Sunset Hearth is a sanctuary for your thoughts. Capture the essence of your day through the warmth of your own voice.</p>
-    <div class="welcome-actions">
-      <button class="btn-primary" onclick="showScreen('login'); setLoginMode('login')">Start Your Journal</button>
-      <button class="btn-secondary" onclick="showScreen('login'); setLoginMode('register')">Register Voice</button>
-    </div>
-  </div>
-  <div class="welcome-image">
-    <div class="welcome-image-inner"></div>
-    <div class="recording-pill">
-      <div class="recording-dot">
-        <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
-      </div>
-      <div class="recording-info">
-        <strong>Recording Evening Reflection</strong>
-        <span>02:14 / 05:00</span>
-        <div class="waveform-mini">
-          <span style="height:8px;animation-delay:0s"></span>
-          <span style="height:14px;animation-delay:0.1s"></span>
-          <span style="height:6px;animation-delay:0.2s"></span>
-          <span style="height:12px;animation-delay:0.3s"></span>
-          <span style="height:10px;animation-delay:0.4s"></span>
-          <span style="height:16px;animation-delay:0.5s"></span>
-          <span style="height:8px;animation-delay:0.6s"></span>
+<div class="screen active welcome-screen" id="screen-welcome">
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="welcome-text">
+        <span class="eyebrow">A private voice sanctuary</span>
+        <h1 id="hero-title">Speak your <em>peace</em> into the evening.</h1>
+        <p>Capture your thoughts, reflect on your day, and find clarity through the warmth of your own voice.</p>
+        <div class="welcome-actions">
+          <button class="btn-primary" onclick="showScreen('login'); setLoginMode('login')">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4v5a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4Zm-7 9a7 7 0 0 0 14 0m-7 7v4m-4 0h8"/></svg>
+            Start Your Journal
+          </button>
+          <button class="btn-secondary" onclick="showScreen('login'); setLoginMode('register')">Register Voice</button>
         </div>
+        <p class="hero-note">Your entries stay on this device.</p>
       </div>
-    </div>
-  </div>
+      <figure class="welcome-image">
+        <img src="assets/sunset-hero.jpg" alt="A warm orange sunset over calm water" width="540" height="360" fetchpriority="high" decoding="async">
+        <figcaption>Make a little room for what is on your mind.</figcaption>
+      </figure>
+    </section>
+
+    <section class="feature-section" id="features" aria-labelledby="features-title">
+      <div class="section-heading">
+        <span class="eyebrow">Made for mindful moments</span>
+        <h2 id="features-title">A quieter way to check in with yourself.</h2>
+        <p>Speak naturally. Sunset Journal turns your reflection into words and keeps it close.</p>
+      </div>
+      <div class="feature-list">
+        <article class="feature-item">
+          <span class="feature-number">01</span>
+          <h3>Voice access</h3>
+          <p>Register a spoken passphrase for simple, personal access.</p>
+        </article>
+        <article class="feature-item">
+          <span class="feature-number">02</span>
+          <h3>Live transcription</h3>
+          <p>See your thoughts appear as words while you speak.</p>
+        </article>
+        <article class="feature-item">
+          <span class="feature-number">03</span>
+          <h3>Reflection &amp; mood</h3>
+          <p>Receive a thoughtful summary of each completed entry.</p>
+        </article>
+        <article class="feature-item">
+          <span class="feature-number">04</span>
+          <h3>Journal history</h3>
+          <p>Return to earlier reflections stored in this browser.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="creators-section" id="creators" aria-labelledby="creators-title">
+      <div class="section-heading">
+        <span class="eyebrow">The people behind the journal</span>
+        <h2 id="creators-title">About the creators</h2>
+        <p>Sunset Journal was built by two developers who wanted technology to feel calmer, more personal, and closer to real life.</p>
+      </div>
+      <div class="creator-grid">
+        <article class="creator-card">
+          <img src="assets/ninad-naik.jpeg" alt="Portrait of Ninad Naik" width="961" height="1280" loading="lazy" decoding="async">
+          <div class="creator-content">
+            <div>
+              <h3>Ninad Naik</h3>
+              <p>Developer &amp; Builder</p>
+            </div>
+            <div class="creator-links">
+              <a href="https://www.linkedin.com/in/ninad-naik-274883262" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6.5 8.5H3V20h3.5V8.5ZM4.75 3A2.05 2.05 0 1 0 4.8 7.1 2.05 2.05 0 0 0 4.75 3ZM20.5 13.4c0-3.46-1.85-5.07-4.32-5.07a3.73 3.73 0 0 0-3.38 1.86V8.5H9.3V20h3.5v-5.7c0-1.5.28-2.96 2.15-2.96 1.84 0 1.86 1.72 1.86 3.06V20h3.5l.19-6.6Z"/></svg>
+                LinkedIn
+              </a>
+              <a href="https://github.com/ninadnaik03" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.83a9.6 9.6 0 0 1 2.5.34c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.56 4.93.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+        </article>
+        <article class="creator-card">
+          <img src="assets/aashita-jolly.jpeg" alt="Portrait of Aashita Jolly" width="653" height="1024" loading="lazy" decoding="async">
+          <div class="creator-content">
+            <div>
+              <h3>Aashita Jolly</h3>
+              <p>Developer &amp; Builder</p>
+            </div>
+            <div class="creator-links">
+              <a href="https://www.linkedin.com/in/aashita-jolly" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6.5 8.5H3V20h3.5V8.5ZM4.75 3A2.05 2.05 0 1 0 4.8 7.1 2.05 2.05 0 0 0 4.75 3ZM20.5 13.4c0-3.46-1.85-5.07-4.32-5.07a3.73 3.73 0 0 0-3.38 1.86V8.5H9.3V20h3.5v-5.7c0-1.5.28-2.96 2.15-2.96 1.84 0 1.86 1.72 1.86 3.06V20h3.5l.19-6.6Z"/></svg>
+                LinkedIn
+              </a>
+              <a href="https://github.com/aashita-46" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.83a9.6 9.6 0 0 1 2.5.34c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.56 4.93.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <strong>Sunset Journal</strong>
+    <span>Your thoughts stay in your browser, on your device.</span>
+    <span>&copy; 2026 Sunset Journal</span>
+  </footer>
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -919,14 +2057,16 @@
     document.getElementById('screen-' + name).classList.add('active');
 
     const navLinks = document.getElementById('nav-links');
+    const publicNav = document.getElementById('public-nav');
     const btnNew = document.getElementById('btn-new-entry');
 
     if (isAuthenticated) {
       navLinks.style.display = 'flex';
       btnNew.style.display = 'block';
+      publicNav.style.display = name === 'welcome' ? '' : 'none';
     }
 
-    document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+    document.querySelectorAll('.app-nav button').forEach(button => button.classList.remove('active'));
     if (name === 'memories') {
       document.getElementById('nav-memories').classList.add('active');
       loadEntries();
@@ -1344,6 +2484,24 @@
     }).join('');
     grid.querySelectorAll('.entry-preview').forEach((node, index) => { node.textContent = entries[index].transcript; });
   }
+
+  const themeToggle = document.getElementById('theme-toggle');
+
+  function syncThemeToggle() {
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    themeToggle.setAttribute('aria-pressed', String(isDark));
+    themeToggle.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+    document.querySelector('meta[name="theme-color"]').content = isDark ? '#1b1918' : '#f7f0e7';
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem('sunsetJournal.theme', nextTheme);
+    syncThemeToggle();
+  });
+
+  syncThemeToggle();
 </script>
 </body>
 </html>
